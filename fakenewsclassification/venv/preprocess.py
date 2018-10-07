@@ -1,12 +1,17 @@
 import pandas as pd
+import json
 from gensim.models import TfidfModel
 from gensim import corpora
 from gensim.parsing.preprocessing import preprocess_string
 from pprint import pprint  # pretty-printer
+from unidecode import unidecode
 
 CSV_FILE_PATH = "D:\\data3mb.csv"
 JSON_FILE_PATH = "D:\\data.json"
-DICTIONARY_FILE_PATH = "D:\\dictionary.dict"
+DICTIONARY_FILE_PATH = "D:\\dictionary.csv"
+SAVE_WORDS_FILE_PATH = "D:\\words.txt"
+CORPUS_FILE_PATH = "D:\\corpus.txt"
+RESULT_FILE_PATH = "D:\\result.json"
 
 STOPLIST = set('for a of the and to in'.split())
 MIN_FREQUENCY = 5
@@ -21,6 +26,11 @@ def convertCsvTojson(csvFilePath, jsonFilePath):
     with open(jsonFilePath, 'w') as f:
         f.write(out)
 
+def implementedPreprocessing(data):
+    texts = [[word for word in document.lower().split() if word not in STOPLIST] for document in data]
+    texts = applyMinFrequency(texts, MIN_FREQUENCY)
+    return text
+
 def applyMinFrequency(texts, i):
     # remove words that appear only once
     from collections import defaultdict
@@ -28,32 +38,57 @@ def applyMinFrequency(texts, i):
     for text in texts:
         for token in text:
           frequency[token] += 1
-
-    return [[token for token in text if frequency[token] > i]
-             for text in texts]
+    return [[token for token in text if frequency[token] > i] for text in texts]
 
 def printDictionaryItems(dictionary):
     for (id, word) in dictionary.items():
-        print(word)
+        print(id, word)
 
-#convertCsvTojson(CSV_FILE_PATH, JSON_FILE_PATH)
+def saveDictionaryWords(dictionary, filePath):
+    wordSet = set()
+    for (id, word) in dictionary.items():
+        wordSet.add(word)
+    with open(filePath, 'w') as f:
+        for word in sorted(wordSet):
+            f.write(unidecode(word) + "\n")
+
+def saveDictionary(dictionary, filePath):
+    with open(filePath, 'w') as f:
+        for (id, word) in dictionary.items():
+            f.write(str(id) + "," + unidecode(word) + "\n")
+
+def saveTfIdfCorpus(model, filePath):
+    with open(filePath, 'w') as f:
+        f.write("[")
+        for i in range(0, len(corpus)):
+            f.write(json.dumps(model[corpus[i]]))
+            if i != len(corpus) - 1:
+                f.write(",")
+        f.write("]")
+
+def saveDataWithTfIdfInformation(model, dataFilePath, resultFilePath):
+    tfCorpus = [model[corpus[i]] for i in range(0, len(corpus))]
+    result = json.load(open(dataFilePath))
+    for i in range(0, len(tfCorpus)):
+        result[i]["TF-IDF"] = dict(tfCorpus[i])
+    with open(resultFilePath, 'w') as f:
+        out = json.dumps(result, indent=4)
+        f.write(out)
+
+convertCsvTojson(CSV_FILE_PATH, JSON_FILE_PATH)
 jsonData = pd.read_json(JSON_FILE_PATH)
 
-#texts = [[word for word in document.lower().split() if word not in STOPLIST] for document in jsonData['content']]
-#texts = applyMinFrequency(texts, MIN_FREQUENCY)
-
-texts = [text.replace("“", "").replace("…", "").replace("‘", "").replace("”", "").replace("’", "").replace("—", "") for text in jsonData['content']]
+texts = jsonData['content']
+texts = [text.replace("“", " ").replace("…", " ").replace("‘", " ").replace("”", " ").replace("’", " ").replace("—", " ").replace("-", " ").replace("  ", " ") for text in jsonData['content']]
 texts = [preprocess_string(text) for text in texts]
 
 dictionary = corpora.Dictionary(texts)
-#dictionary.save(DICTIONARY_FILE_PATH)
 corpus = [dictionary.doc2bow(text) for text in texts]
 model = TfidfModel(corpus)  # fit model
-vector = model[corpus[0]]
 
-#printDictionaryItems(dictionary)
-
-#for c in range(0,len(corpus)) :
-#    print("%s. vector: %s" %(c, model[corpus[c]]))
+saveDictionaryWords(dictionary, SAVE_WORDS_FILE_PATH)
+saveTfIdfCorpus(model, CORPUS_FILE_PATH)
+saveDataWithTfIdfInformation(model, JSON_FILE_PATH, RESULT_FILE_PATH)
+saveDictionary(dictionary,DICTIONARY_FILE_PATH)
 
 print("end.")

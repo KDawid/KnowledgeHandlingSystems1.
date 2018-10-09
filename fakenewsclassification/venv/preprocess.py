@@ -60,16 +60,16 @@ def saveDictionary(dictionary, filePath):
 def saveTfIdfCorpus(model, filePath):
     with open(filePath, 'w') as f:
         f.write("[")
-        for i in range(0, len(corpus)):
+        for i in range(len(corpus)):
             f.write(json.dumps(model[corpus[i]]))
             if i != len(corpus) - 1:
                 f.write(",")
         f.write("]")
 
 def saveDataWithTfIdfInformation(model, dataFilePath, resultFilePath):
-    tfCorpus = [model[corpus[i]] for i in range(0, len(corpus))]
+    tfCorpus = [model[corpus[i]] for i in range(len(corpus))]
     result = json.load(open(dataFilePath))
-    for i in range(0, len(tfCorpus)):
+    for i in range(len(tfCorpus)):
         result[i]["TF-IDF"] = dict(tfCorpus[i])
     with open(resultFilePath, 'w') as f:
         out = json.dumps(result, indent=4)

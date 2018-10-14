@@ -6,7 +6,6 @@ from gensim.parsing.preprocessing import preprocess_string
 from pprint import pprint  # pretty-printer
 from unidecode import unidecode
 
-CSV_FILE_PATH = "D:\\data3mb.csv"
 JSON_FILE_PATH = "D:\\data.json"
 DICTIONARY_FILE_PATH = "D:\\dictionary.csv"
 SAVE_WORDS_FILE_PATH = "D:\\words.txt"
@@ -15,16 +14,6 @@ RESULT_FILE_PATH = "D:\\result.json"
 
 STOPLIST = set('for a of the and to in'.split())
 MIN_FREQUENCY = 5
-
-def convertCsvTojson(csvFilePath, jsonFilePath):
-    data  = pd.read_csv(csvFilePath)
-
-    header = data.columns.values
-    print("Header: %s" %header)
-
-    out = data.to_json(orient='records')
-    with open(jsonFilePath, 'w') as f:
-        f.write(out)
 
 def implementedPreprocessing(data):
     texts = [[word for word in document.lower().split() if word not in STOPLIST] for document in data]
@@ -75,9 +64,7 @@ def saveDataWithTfIdfInformation(model, dataFilePath, resultFilePath):
         out = json.dumps(result, indent=4)
         f.write(out)
 
-convertCsvTojson(CSV_FILE_PATH, JSON_FILE_PATH)
 jsonData = pd.read_json(JSON_FILE_PATH)
-
 texts = jsonData['content']
 texts = [text.replace("“", " ").replace("…", " ").replace("‘", " ").replace("”", " ").replace("’", " ").replace("—", " ").replace("-", " ").replace("  ", " ") for text in jsonData['content']]
 texts = [preprocess_string(text) for text in texts]

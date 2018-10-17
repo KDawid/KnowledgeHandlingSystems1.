@@ -56,3 +56,5 @@ jsonData = pd.read_json(JSON_FILE_PATH)
 printCategoryOccurences(jsonData)
 jsonData = filterCategories(jsonData, USED_CATEGORY_SET, NUMBER_OF_INSTANCES_IN_CATEGORIES)
 writeJsonData(jsonData, JSON_FILE_PATH)
+
+print("end.")

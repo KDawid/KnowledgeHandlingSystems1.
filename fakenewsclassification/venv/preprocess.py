@@ -11,6 +11,7 @@ DICTIONARY_FILE_PATH = "D:\\dictionary.csv"
 SAVE_WORDS_FILE_PATH = "D:\\words.txt"
 CORPUS_FILE_PATH = "D:\\corpus.txt"
 RESULT_FILE_PATH = "D:\\result.json"
+VECTOR_FILE_PATH = "D:\\vector.json"
 
 STOPLIST = set('for a of the and to in'.split())
 MIN_FREQUENCY = 5
@@ -64,6 +65,36 @@ def saveDataWithTfIdfInformation(model, dataFilePath, resultFilePath):
         out = json.dumps(result, indent=4)
         f.write(out)
 
+def getNumberOfVectors(filePath):
+    dictionary = pd.read_csv(DICTIONARY_FILE_PATH)
+    return len(dictionary)
+
+def writeWordVectorsToJson(filePath):
+    jsonData = pd.read_json(RESULT_FILE_PATH)
+    vectorLength = getNumberOfVectors(DICTIONARY_FILE_PATH)
+
+    tfIdf = jsonData['TF-IDF'].to_frame()
+    tfIdf['type'] = jsonData['type']
+
+    d = dict()
+    d['type'] = [tfIdf['type'][0]]
+    for i in range(vectorLength):
+        if str(i) in tfIdf["TF-IDF"][0]:
+            d[str(i)] = [tfIdf["TF-IDF"][0][str(i)]]
+        else:
+            d[str(i)] = [0.0]
+    for index in range(len(tfIdf["TF-IDF"])):
+        d['type'] += [tfIdf['type'][index]]
+        for i in range(vectorLength):
+            if str(i) in tfIdf["TF-IDF"][index]:
+                d[str(i)] += [tfIdf["TF-IDF"][index][str(i)]]
+            else:
+                d[str(i)] += [0.0]
+
+    with open(VECTOR_FILE_PATH, 'w') as f:
+        out = json.dumps(d, indent=4)
+        f.write(out)
+
 jsonData = pd.read_json(JSON_FILE_PATH)
 texts = jsonData['content']
 texts = [text.replace("“", " ").replace("…", " ").replace("‘", " ").replace("”", " ").replace("’", " ").replace("—", " ").replace("-", " ").replace("  ", " ") for text in jsonData['content']]
@@ -77,5 +108,6 @@ saveDictionaryWords(dictionary, SAVE_WORDS_FILE_PATH)
 saveTfIdfCorpus(model, CORPUS_FILE_PATH)
 saveDataWithTfIdfInformation(model, JSON_FILE_PATH, RESULT_FILE_PATH)
 saveDictionary(dictionary,DICTIONARY_FILE_PATH)
+writeWordVectorsToJson(VECTOR_FILE_PATH)
 
 print("end.")

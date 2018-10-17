@@ -1,84 +1,75 @@
+from ggplot import *
 import json
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
-
-JSON_FILE_PATH = "D:\\result.json"
-DICTIONARY_FILE_PATH = "D:\\dictionary.csv"
+import time
+from sklearn.manifold import TSNE
 
 VECTOR_FILE_PATH = "D:\\vector.json"
 
-USED_CATEGORY_SET = ['unreliable', 'conspiracy', 'clickbait'] # for 3 mb dataset
-
-def getNumberOfVectors(filePath):
-    dictionary = pd.read_csv(DICTIONARY_FILE_PATH)
-    return len(dictionary)
-
-def writeWordVectorsToJson(filePath):
-    jsonData = pd.read_json(JSON_FILE_PATH)
-    vectorLength = getNumberOfVectors(DICTIONARY_FILE_PATH)
-
-    tfIdf = jsonData['TF-IDF'].to_frame()
-    tfIdf['type'] = jsonData['type']
-
-    d = dict()
-    d['type'] = [tfIdf['type'][0]]
-    for i in range(vectorLength):
-        if str(i) in tfIdf["TF-IDF"][0]:
-            d[str(i)] = [tfIdf["TF-IDF"][0][str(i)]]
-        else:
-            d[str(i)] = [0.0]
-    for index in range(len(tfIdf["TF-IDF"])):
-        d['type'] += [tfIdf['type'][0]]
-        for i in range(vectorLength):
-            if str(i) in tfIdf["TF-IDF"][index]:
-                d[str(i)] += [tfIdf["TF-IDF"][index][str(i)]]
-            else:
-                d[str(i)] += [0.0]
-
-    with open(VECTOR_FILE_PATH, 'w') as f:
-        out = json.dumps(d, indent=4)
-        f.write(out)
+SAMPLE_SIZE = 100
+NUMBER_OF_PCA = 3
 
 def readVectors(filePath):
     return pd.read_json(filePath)
 
-#writeWordVectorsToJson(VECTOR_FILE_PATH)
+def getSample(vectors, size):
+    try:
+        chosen_idx = np.random.choice(len(vectors), replace=False, size=size)
+        df_trimmed = vectors.iloc[chosen_idx]
+        return df_trimmed
+    except:
+        print("ERROR - Sample size is larger than dataset size! Return with the dataset.")
+        return vectors
+
+def calculatePrincipalComponents(vectors, numberOfComponents):
+    features = [i for i in vectors.columns.values if i != "type"]
+
+    pca = PCA(n_components=numberOfComponents)
+    pca_result = pca.fit_transform(vectors[features].values)
+
+    for i in range(numberOfComponents):
+        key = 'pca_' + str(i+1)
+        vectors[key] = pca_result[:, i]
+    #print('Components: %s' % pcas)
+    print('Explained variation per principal component: {}'.format(pca.explained_variance_ratio_))
+
+def showPca(vectors):
+    chart = ggplot(vectors.loc[:, :], aes(x='pca_1', y='pca_2', color='type')) \
+            + geom_point(size=75, alpha=0.8) \
+            + ggtitle("First and Second Principal Components")
+    chart.show()
+
+def calculateTsne(vectors):
+    features = [i for i in vectors.columns.values if i != "type"]
+
+    time_start = time.time()
+    tsne = TSNE(n_components=2, verbose=1, perplexity=40, n_iter=300)
+    tsne_results = tsne.fit_transform(vectors.loc[:, features].values)
+
+    print('t-SNE done! Time elapsed: {} seconds'.format(time.time() - time_start))
+
+    tsne_vectors['x-tsne'] = tsne_results[:, 0]
+    tsne_vectors['y-tsne'] = tsne_results[:, 1]
+
+def showTsne(vectors):
+    chart = ggplot(vectors, aes(x='x-tsne', y='y-tsne', color='type')) \
+            + geom_point(size=70, alpha=0.1) \
+            + ggtitle("tSNE dimensions")
+    chart.show()
+
 vectors = readVectors(VECTOR_FILE_PATH)
+sample = getSample(vectors, SAMPLE_SIZE)
 
-print(vectors)
-features = [i for i in vectors.columns.values if i != "type"]
-# Separating out the features
-x = vectors.loc[:, features].values
-# Separating out the target
-y = vectors.loc[:,['type']].values
-# Standardizing the features
-x = StandardScaler().fit_transform(x)
+pca_vectors = sample.loc[:,:].copy()
+calculatePrincipalComponents(pca_vectors, NUMBER_OF_PCA)
+showPca(pca_vectors)
 
-from sklearn.decomposition import PCA
-pca = PCA(n_components=2)
-principalComponents = pca.fit_transform(x)
-principalDf = pd.DataFrame(data = principalComponents
-             , columns = ['principal component 1', 'principal component 2'])
-finalDf = pd.concat([principalDf, vectors[['type']]], axis = 1)
-
-fig = plt.figure(figsize = (8,8))
-ax = fig.add_subplot(1,1,1)
-ax.set_xlabel('Principal Component 1', fontsize = 15)
-ax.set_ylabel('Principal Component 2', fontsize = 15)
-ax.set_title('2 component PCA', fontsize = 20)
-targets = USED_CATEGORY_SET
-colors = ['r', 'g', 'b']
-for target, color in zip(targets,colors):
-    indicesToKeep = finalDf['type'] == target
-    ax.scatter(finalDf.loc[indicesToKeep, 'principal component 1']
-               , finalDf.loc[indicesToKeep, 'principal component 2']
-               , c = color
-               , s = 50)
-ax.legend(targets)
-ax.grid()
-
-plt.show(block=True)
+tsne_vectors = sample.loc[:,:].copy()
+calculateTsne(tsne_vectors)
+showTsne(tsne_vectors)
 
 print("end.")

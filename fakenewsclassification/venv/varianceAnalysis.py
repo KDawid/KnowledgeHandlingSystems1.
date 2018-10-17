@@ -1,12 +1,13 @@
+#Source: https://medium.com/@luckylwk/visualising-high-dimensional-datasets-using-pca-and-t-sne-in-python-8ef87e7915b
 from ggplot import *
+import matplotlib.pyplot as plt
+import numpy as np
 import json
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 from sklearn.preprocessing import StandardScaler
 import time
-from sklearn.manifold import TSNE
 
 VECTOR_FILE_PATH = "D:\\vector.json"
 

@@ -1,8 +1,8 @@
-import pandas as pd
 import json
-from gensim.models import TfidfModel
 from gensim import corpora
+from gensim.models import TfidfModel
 from gensim.parsing.preprocessing import preprocess_string
+import pandas as pd
 from pprint import pprint  # pretty-printer
 from unidecode import unidecode
 

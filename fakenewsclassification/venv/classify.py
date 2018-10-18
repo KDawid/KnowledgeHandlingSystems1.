@@ -54,5 +54,5 @@ test_pred = gbc.predict(test)
 
 print(confusion_matrix(test_labels, test_pred))
 print(classification_report(test_labels, test_pred))
-scores = sklearn.model_selection.cross_val_score(gbc, dataset, dataset_labels, cv=1)
+scores = sklearn.model_selection.cross_val_score(gbc, dataset, dataset_labels, cv=2)
 print(np.average(scores))

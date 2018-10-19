@@ -7,6 +7,11 @@ from sklearn.utils import shuffle
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import LinearSVC
 from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.neighbors import KNeighborsClassifier
 
 VECTOR_FILE_PATH = "../../vector.json"
 
@@ -34,8 +39,9 @@ test_pred = decision_tree.predict(test)
 
 print(confusion_matrix(test_labels, test_pred))
 print(classification_report(test_labels, test_pred))
+print("Validation score: %s" %decision_tree.score(test, test_labels) )
 scores = sklearn.model_selection.cross_val_score(decision_tree, dataset, dataset_labels, cv=10)
-print(np.average(scores))
+print("K-fold score: %s" %np.average(scores))
 
 print("Linear SVM: ")
 svm = LinearSVC()
@@ -44,8 +50,53 @@ test_pred = svm.predict(test)
 
 print(confusion_matrix(test_labels, test_pred))
 print(classification_report(test_labels, test_pred))
+print("Validation score: %s" %svm.score(test, test_labels) )
 scores = sklearn.model_selection.cross_val_score(svm, dataset, dataset_labels, cv=10)
-print(np.average(scores))
+print("K-fold score: %s" %np.average(scores))
+
+print("Naive bayes: ")
+mnb = MultinomialNB()
+mnb.fit(train, train_labels)
+test_pred = mnb.predict(test)
+
+print(confusion_matrix(test_labels, test_pred))
+print(classification_report(test_labels, test_pred))
+print("Validation score: %s" %mnb.score(test, test_labels) )
+scores = sklearn.model_selection.cross_val_score(mnb, dataset, dataset_labels, cv=10)
+print("K-fold score: %s" %np.average(scores))
+
+print("KNNeighbors: ")
+knn = KNeighborsClassifier()
+knn.fit(train, train_labels)
+test_pred = mnb.predict(test)
+
+print(confusion_matrix(test_labels, test_pred))
+print(classification_report(test_labels, test_pred))
+print("Validation score: %s" %knn.score(test, test_labels) )
+scores = sklearn.model_selection.cross_val_score(knn, dataset, dataset_labels, cv=10)
+print("K-fold score: %s" %np.average(scores))
+
+print("ADA boost: ")
+ada = AdaBoostClassifier()
+ada.fit(train, train_labels)
+test_pred = ada.predict(test)
+
+print(confusion_matrix(test_labels, test_pred))
+print(classification_report(test_labels, test_pred))
+print("Validation score: %s" %ada.score(test, test_labels) )
+scores = sklearn.model_selection.cross_val_score(ada, dataset, dataset_labels, cv=2)
+print("K-fold score: %s" %np.average(scores))
+
+print("Random forest: ")
+rf = AdaBoostClassifier()
+rf.fit(train, train_labels)
+test_pred = rf.predict(test)
+
+print(confusion_matrix(test_labels, test_pred))
+print(classification_report(test_labels, test_pred))
+print("Validation score: %s" %rf.score(test, test_labels) )
+scores = sklearn.model_selection.cross_val_score(rf, dataset, dataset_labels, cv=2)
+print("K-fold score: %s" %np.average(scores))
 
 print("Gradient boost: ")
 gbc = GradientBoostingClassifier()
@@ -54,5 +105,6 @@ test_pred = gbc.predict(test)
 
 print(confusion_matrix(test_labels, test_pred))
 print(classification_report(test_labels, test_pred))
+print("Validation score: %s" %gbc.score(test, test_labels) )
 scores = sklearn.model_selection.cross_val_score(gbc, dataset, dataset_labels, cv=2)
-print(np.average(scores))
+print("K-fold score: %s" %np.average(scores))

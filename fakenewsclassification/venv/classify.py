@@ -1,4 +1,5 @@
 import json
+from enum import Enum
 import numpy as np
 import pandas as pd
 import sklearn
@@ -14,103 +15,104 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.neighbors import KNeighborsClassifier
 
-with open('config.json') as json_data_file:
-    config = json.load(json_data_file)
+CONFIG_FILE_PATH = "config.json"
 
-VECTOR_FILE_PATH = config["VECTOR_FILE_PATH"]
+TEST_SIZE = 0.20
+CROSS_VALIDATION = 10
 
-vectors = pd.read_json(VECTOR_FILE_PATH)
+class Evaluation(Enum):
+    CROSS_VALIDATION = 0
+    VALIDATION_SET = 1
+    BOTH = 2
 
-print("Vectors before shuffle data:")
-print(vectors.head())
+class Classifiers(Enum):
+    DECISION_TREE = [DecisionTreeClassifier, "Decision tree"]
+    SVM = [LinearSVC, "Linear SVM"]
+    NAIVE_BAYES = [MultinomialNB, "Naive Bayes"]
+    KNN = [KNeighborsClassifier, "K-Nearest Neighbors"]
+    ADA_BOOST = [AdaBoostClassifier, "ADA boost"]
+    RANDOM_FOREST = [AdaBoostClassifier, "Random forest"]
+    GRADIENT_BOOST = [GradientBoostingClassifier, "Gradient boost"]
 
-vectors = shuffle(vectors)
+class FakeNewsClassifier:
+    VECTOR_FILE_PATH = None
 
-print("Vectors after shuffle data:")
-print(vectors.head())
+    dataset = None
+    dataset_labels = None
+    train_data = None
+    train_labels = None
+    test_data = None
+    test_labels = None
 
-print("Separate labels from data")
-dataset = vectors.drop('type', axis='columns')
-dataset_labels = vectors['type']
+    classifierType = None
+    classifierName = None
 
-print("Splitting dataset to training set and validation set")
-train, test, train_labels, test_labels = train_test_split(dataset, dataset_labels, test_size=0.20)
+    def __init__(self, configFilePath):
+        with open('config.json') as json_data_file:
+            config = json.load(json_data_file)
+        self.VECTOR_FILE_PATH = config["VECTOR_FILE_PATH"]
+        self.readData()
 
-print("Decision tree: ")
-decision_tree = DecisionTreeClassifier()
-decision_tree.fit(train, train_labels)
-test_pred = decision_tree.predict(test)
+    def readData(self):
+        vectors = pd.read_json(self.VECTOR_FILE_PATH)
+        self.dataset = vectors.drop('type', axis='columns')
+        self.dataset_labels = vectors['type']
+        self.train_data, self.test_data, self.train_labels, self.test_labels = train_test_split(self.dataset, self.dataset_labels, test_size=TEST_SIZE)
 
-print(confusion_matrix(test_labels, test_pred))
-print(classification_report(test_labels, test_pred))
-print("Validation score: %s" %decision_tree.score(test, test_labels) )
-scores = sklearn.model_selection.cross_val_score(decision_tree, dataset, dataset_labels, cv=10)
-print("K-fold score: %s" %np.average(scores))
+    def setClassifierType(self, type):
+        self.classifierType = type.value[0]
+        self.classifierName = type.value[1]
 
-print("Linear SVM: ")
-svm = LinearSVC()
-svm.fit(train, train_labels)
-test_pred = svm.predict(test)
+    def buildModel(self):
+        print("%s: " % self.classifierName)
+        model = self.classifierType()
+        model.fit(self.train_data, self.train_labels)
+        return model
 
-print(confusion_matrix(test_labels, test_pred))
-print(classification_report(test_labels, test_pred))
-print("Validation score: %s" %svm.score(test, test_labels) )
-scores = sklearn.model_selection.cross_val_score(svm, dataset, dataset_labels, cv=10)
-print("K-fold score: %s" %np.average(scores))
+    def evaluateOnValidationData(self, model):
+        test_pred = model.predict(self.test_data)
+        print(confusion_matrix(self.test_labels, test_pred))
+        print(classification_report(self.test_labels, test_pred))
+        score = model.score(self.test_data, self.test_labels)
+        print("Validation score: %s" % score)
+        return score
 
-print("Naive bayes: ")
-mnb = MultinomialNB()
-mnb.fit(train, train_labels)
-test_pred = mnb.predict(test)
+    def crossValidate(self, model):
+        scores = sklearn.model_selection.cross_val_score(model, self.dataset, self.dataset_labels,
+                                                         cv=CROSS_VALIDATION)
+        score = np.average(scores)
+        print("K-fold score: %s" % score)
+        return score
 
-print(confusion_matrix(test_labels, test_pred))
-print(classification_report(test_labels, test_pred))
-print("Validation score: %s" %mnb.score(test, test_labels) )
-scores = sklearn.model_selection.cross_val_score(mnb, dataset, dataset_labels, cv=10)
-print("K-fold score: %s" %np.average(scores))
+    def makeClassification(self, eval):
+        model= self.buildModel()
+        result = dict()
+        if eval != Evaluation.CROSS_VALIDATION :
+            #Evaluate on validation data
+            result["test"] = self.evaluateOnValidationData(model)
 
-print("KNNeighbors: ")
-knn = KNeighborsClassifier()
-knn.fit(train, train_labels)
-test_pred = mnb.predict(test)
+        if eval != Evaluation.VALIDATION_SET:
+            #Evaluate with cross validation
+            result["cross"] = self.crossValidate(model)
+        return result
 
-print(confusion_matrix(test_labels, test_pred))
-print(classification_report(test_labels, test_pred))
-print("Validation score: %s" %knn.score(test, test_labels) )
-scores = sklearn.model_selection.cross_val_score(knn, dataset, dataset_labels, cv=10)
-print("K-fold score: %s" %np.average(scores))
+    def classify(self, type, eval=Evaluation.BOTH):
+        self.setClassifierType(type)
+        return self.makeClassification(eval)
 
-print("ADA boost: ")
-ada = AdaBoostClassifier()
-ada.fit(train, train_labels)
-test_pred = ada.predict(test)
+    def findBestClassifier(self, eval=Evaluation.BOTH):
+        result = dict()
+        for i in Classifiers:
+            result[i.value[1]] = classifier.classify(i, eval)
+        print(result)
 
-print(confusion_matrix(test_labels, test_pred))
-print(classification_report(test_labels, test_pred))
-print("Validation score: %s" %ada.score(test, test_labels) )
-scores = sklearn.model_selection.cross_val_score(ada, dataset, dataset_labels, cv=2)
-print("K-fold score: %s" %np.average(scores))
-
-print("Random forest: ")
-rf = AdaBoostClassifier()
-rf.fit(train, train_labels)
-test_pred = rf.predict(test)
-
-print(confusion_matrix(test_labels, test_pred))
-print(classification_report(test_labels, test_pred))
-print("Validation score: %s" %rf.score(test, test_labels) )
-scores = sklearn.model_selection.cross_val_score(rf, dataset, dataset_labels, cv=2)
-print("K-fold score: %s" %np.average(scores))
-
-print("Gradient boost: ")
-gbc = GradientBoostingClassifier()
-gbc.fit(train, train_labels)
-test_pred = gbc.predict(test)
-
-print(confusion_matrix(test_labels, test_pred))
-print(classification_report(test_labels, test_pred))
-print("Validation score: %s" %gbc.score(test, test_labels) )
-scores = sklearn.model_selection.cross_val_score(gbc, dataset, dataset_labels, cv=2)
-print("K-fold score: %s" %np.average(scores))
-
+classifier = FakeNewsClassifier(CONFIG_FILE_PATH)
+#classifier.classify(Classifiers.DECISION_TREE, Evaluation.CROSS_VALIDATION)
+'''
+for i in Classifiers:
+    print("")
+    print("--------------------------------------------------")
+    classifier.classify(i, Evaluation.BOTH)
+'''
+classifier.findBestClassifier(Evaluation.VALIDATION_SET)
 print("end.")

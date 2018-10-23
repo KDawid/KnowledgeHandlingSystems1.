@@ -9,7 +9,10 @@ from sklearn.manifold import TSNE
 from sklearn.preprocessing import StandardScaler
 import time
 
-VECTOR_FILE_PATH = "D:\\vector.json"
+with open('config.json') as json_data_file:
+    config = json.load(json_data_file)
+
+VECTOR_FILE_PATH = config["VECTOR_FILE_PATH"]
 
 SAMPLE_SIZE = 100
 NUMBER_OF_PCA = 3

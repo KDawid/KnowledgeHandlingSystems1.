@@ -1,0 +1,18 @@
+{
+	"_comment": {
+		"CSV_FILE_PATH": "Original CSV input data",
+		"JSON_FILE_PATH": "Original CSV input data converted to JSON",
+		"DICTIONARY_FILE_PATH": "CSV file of extracted words with their ids",
+		"SAVE_WORDS_FILE_PATH": "TXT list of extracted words",
+		"CORPUS_FILE_PATH": "TXT file of the corpus in array form",
+		"RESULT_FILE_PATH": "JSON file of original data with TF_IDF transormed data",
+		"VECTOR_FILE_PATH": "JSON file of categories and WordVectors"
+	},
+	"CSV_FILE_PATH": "",
+	"JSON_FILE_PATH": "",
+	"DICTIONARY_FILE_PATH": "",
+	"SAVE_WORDS_FILE_PATH": "",
+	"CORPUS_FILE_PATH": "",
+	"RESULT_FILE_PATH": "",
+	"VECTOR_FILE_PATH": ""
+}

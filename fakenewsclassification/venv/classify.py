@@ -1,3 +1,4 @@
+import json
 import numpy as np
 import pandas as pd
 import sklearn
@@ -13,7 +14,10 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.neighbors import KNeighborsClassifier
 
-VECTOR_FILE_PATH = "../../vector.json"
+with open('config.json') as json_data_file:
+    config = json.load(json_data_file)
+
+VECTOR_FILE_PATH = config["VECTOR_FILE_PATH"]
 
 vectors = pd.read_json(VECTOR_FILE_PATH)
 
@@ -108,3 +112,5 @@ print(classification_report(test_labels, test_pred))
 print("Validation score: %s" %gbc.score(test, test_labels) )
 scores = sklearn.model_selection.cross_val_score(gbc, dataset, dataset_labels, cv=2)
 print("K-fold score: %s" %np.average(scores))
+
+print("end.")

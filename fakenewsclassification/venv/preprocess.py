@@ -6,12 +6,15 @@ import pandas as pd
 from pprint import pprint  # pretty-printer
 from unidecode import unidecode
 
-JSON_FILE_PATH = "D:\\data.json"
-DICTIONARY_FILE_PATH = "D:\\dictionary.csv"
-SAVE_WORDS_FILE_PATH = "D:\\words.txt"
-CORPUS_FILE_PATH = "D:\\corpus.txt"
-RESULT_FILE_PATH = "D:\\result.json"
-VECTOR_FILE_PATH = "D:\\vector.json"
+with open('config.json') as json_data_file:
+    config = json.load(json_data_file)
+
+JSON_FILE_PATH = config["JSON_FILE_PATH"]
+DICTIONARY_FILE_PATH = config["DICTIONARY_FILE_PATH"]
+SAVE_WORDS_FILE_PATH = config["SAVE_WORDS_FILE_PATH"]
+CORPUS_FILE_PATH = config["CORPUS_FILE_PATH"]
+RESULT_FILE_PATH = config["RESULT_FILE_PATH"]
+VECTOR_FILE_PATH = config["VECTOR_FILE_PATH"]
 
 STOPLIST = set('for a of the and to in'.split())
 MIN_FREQUENCY = 5

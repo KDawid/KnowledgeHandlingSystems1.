@@ -1,9 +1,11 @@
 import json
 import pandas as pd
 
+with open('config.json') as json_data_file:
+    config = json.load(json_data_file)
 
-CSV_FILE_PATH = "D:\\data3mb.csv"
-JSON_FILE_PATH = "D:\\data.json"
+CSV_FILE_PATH = config["CSV_FILE_PATH"]
+JSON_FILE_PATH = config["JSON_FILE_PATH"]
 
 USED_CATEGORY_SET = ['unreliable', 'conspiracy', 'clickbait'] # for 3 mb dataset
 NUMBER_OF_INSTANCES_IN_CATEGORIES = 100 # for 3 mb dataset

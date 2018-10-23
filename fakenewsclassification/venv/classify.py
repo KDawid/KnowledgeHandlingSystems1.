@@ -26,6 +26,7 @@ class Evaluation(Enum):
     BOTH = 2
 
 class Classifiers(Enum):
+    #KEY = [Classifier function, classifier name]
     DECISION_TREE = [DecisionTreeClassifier, "Decision tree"]
     SVM = [LinearSVC, "Linear SVM"]
     NAIVE_BAYES = [MultinomialNB, "Naive Bayes"]
@@ -63,10 +64,10 @@ class FakeNewsClassifier:
         self.classifierType = type.value[0]
         self.classifierName = type.value[1]
 
-    def buildModel(self):
+    def buildModel(self, train_data, train_labels):
         print("%s: " % self.classifierName)
         model = self.classifierType()
-        model.fit(self.train_data, self.train_labels)
+        model.fit(train_data, train_labels)
         return model
 
     def evaluateOnValidationData(self, model):
@@ -85,14 +86,15 @@ class FakeNewsClassifier:
         return score
 
     def makeClassification(self, eval):
-        model= self.buildModel()
         result = dict()
         if eval != Evaluation.CROSS_VALIDATION :
             #Evaluate on validation data
+            model = self.buildModel(self.train_data, self.train_labels)
             result["test"] = self.evaluateOnValidationData(model)
 
         if eval != Evaluation.VALIDATION_SET:
             #Evaluate with cross validation
+            model = self.buildModel(self.dataset, self.dataset_labels)
             result["cross"] = self.crossValidate(model)
         return result
 
@@ -104,15 +106,22 @@ class FakeNewsClassifier:
         result = dict()
         for i in Classifiers:
             result[i.value[1]] = classifier.classify(i, eval)
-        print(result)
+        if "test" in result[next(iter(result))]:
+            print("Best accuracy using validation set: %s, classifier: %s" % max(
+                [(value["test"], key) for key, value in result.items()]))
+        if "cross" in result[next(iter(result))]:
+            print("Best accuracy using cross-validation: %s, classifier: %s" % max(
+                [(value["cross"], key) for key, value in result.items()]))
 
 classifier = FakeNewsClassifier(CONFIG_FILE_PATH)
+
 #classifier.classify(Classifiers.DECISION_TREE, Evaluation.CROSS_VALIDATION)
 '''
 for i in Classifiers:
     print("")
     print("--------------------------------------------------")
-    classifier.classify(i, Evaluation.BOTH)
+    classifier.classify(i, Evaluation.VALIDATION_SET)
 '''
-classifier.findBestClassifier(Evaluation.VALIDATION_SET)
+classifier.findBestClassifier(Evaluation.BOTH)
+
 print("end.")

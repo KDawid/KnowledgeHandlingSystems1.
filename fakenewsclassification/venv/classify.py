@@ -51,7 +51,8 @@ class FakeNewsClassifier:
     def __init__(self, configFilePath):
         with open('config.json') as json_data_file:
             config = json.load(json_data_file)
-        self.VECTOR_FILE_PATH = config["VECTOR_FILE_PATH"]
+        self.VECTOR_FILE_PATH = config["TF_IDF_VECTOR_FILE_PATH"]
+        #self.VECTOR_FILE_PATH = config["WORD2VEC_VECTOR_FILE_PATH"]
         self.readData()
 
     def readData(self):
@@ -115,13 +116,13 @@ class FakeNewsClassifier:
 
 classifier = FakeNewsClassifier(CONFIG_FILE_PATH)
 
-#classifier.classify(Classifiers.DECISION_TREE, Evaluation.CROSS_VALIDATION)
+classifier.classify(Classifiers.SVM, Evaluation.CROSS_VALIDATION)
 '''
 for i in Classifiers:
     print("")
     print("--------------------------------------------------")
     classifier.classify(i, Evaluation.VALIDATION_SET)
 '''
-classifier.findBestClassifier(Evaluation.BOTH)
+#classifier.findBestClassifier(Evaluation.BOTH)
 
 print("end.")

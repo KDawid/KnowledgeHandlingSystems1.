@@ -29,7 +29,7 @@ class Classifiers(Enum):
     #KEY = [Classifier function, classifier name]
     DECISION_TREE = [DecisionTreeClassifier, "Decision tree"]
     SVM = [LinearSVC, "Linear SVM"]
-    NAIVE_BAYES = [MultinomialNB, "Naive Bayes"]
+    #NAIVE_BAYES = [MultinomialNB, "Naive Bayes"]
     KNN = [KNeighborsClassifier, "K-Nearest Neighbors"]
     ADA_BOOST = [AdaBoostClassifier, "ADA boost"]
     RANDOM_FOREST = [AdaBoostClassifier, "Random forest"]
@@ -51,8 +51,8 @@ class FakeNewsClassifier:
     def __init__(self, configFilePath):
         with open('config.json') as json_data_file:
             config = json.load(json_data_file)
-        self.VECTOR_FILE_PATH = config["TF_IDF_VECTOR_FILE_PATH"]
-        #self.VECTOR_FILE_PATH = config["WORD2VEC_VECTOR_FILE_PATH"]
+        #self.VECTOR_FILE_PATH = config["TF_IDF_VECTOR_FILE_PATH"]
+        self.VECTOR_FILE_PATH = config["WORD2VEC_VECTOR_FILE_PATH"]
         self.readData()
 
     def readData(self):
@@ -107,6 +107,7 @@ class FakeNewsClassifier:
         result = dict()
         for i in Classifiers:
             result[i.value[1]] = classifier.classify(i, eval)
+            print("-----------------------------------------------------------------")
         if "test" in result[next(iter(result))]:
             print("Best accuracy using validation set: %s, classifier: %s" % max(
                 [(value["test"], key) for key, value in result.items()]))
@@ -116,13 +117,7 @@ class FakeNewsClassifier:
 
 classifier = FakeNewsClassifier(CONFIG_FILE_PATH)
 
-classifier.classify(Classifiers.SVM, Evaluation.CROSS_VALIDATION)
-'''
-for i in Classifiers:
-    print("")
-    print("--------------------------------------------------")
-    classifier.classify(i, Evaluation.VALIDATION_SET)
-'''
-#classifier.findBestClassifier(Evaluation.BOTH)
+#classifier.classify(Classifiers.SVM, Evaluation.CROSS_VALIDATION)
+classifier.findBestClassifier(Evaluation.BOTH)
 
 print("end.")

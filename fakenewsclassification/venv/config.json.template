@@ -8,7 +8,7 @@
 		"RESULT_FILE_PATH": "JSON file of original data with TF_IDF transormed data",
 		"TF_IDF_VECTOR_FILE_PATH": "JSON file of categories and WordVectors (TF-IDF)",
 		"WORD2VEC_VECTOR_FILE_PATH": "JSON file of categories and WordVectors (Word2Vec)",
-		"WORD2VEC_MODEL_FILE_PATH": "Word2Vec model"
+		"WORD2VEC_MODEL_FILE_PATH": "Google Word2Vec model (binary) - http://mccormickml.com/2016/04/12/googles-pretrained-word2vec-model-in-python/"
 	},
 	"CSV_FILE_PATH": "",
 	"JSON_FILE_PATH": "",

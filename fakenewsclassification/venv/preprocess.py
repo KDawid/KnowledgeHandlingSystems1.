@@ -1,8 +1,10 @@
 import json
 from gensim import corpora
+from gensim.models import KeyedVectors
 from gensim.models import TfidfModel
 from gensim.models import Word2Vec
 from gensim.parsing.preprocessing import preprocess_string
+import numpy as np
 import pandas as pd
 from pprint import pprint  # pretty-printer
 from unidecode import unidecode
@@ -35,10 +37,6 @@ class FakeNewsPreprocesser:
         self.WORD2VEC_MODEL_FILE_PATH = config["WORD2VEC_MODEL_FILE_PATH"]
 
     def readJson(self):
-        data = json.load(open(self.JSON_FILE_PATH))
-        with open(self.RESULT_FILE_PATH, 'w') as f:
-            out = json.dumps(data, indent=4)
-            f.write(out)
         return pd.read_json(self.JSON_FILE_PATH)
 
     def preprocessText(self, jsonData):
@@ -145,44 +143,20 @@ class FakeNewsPreprocesser:
         preprocesser.saveDictionary(dictionary)
         preprocesser.writeTfIdfWordVectorsToJson()
 
-    def word2VecTransformation(self, texts):
-        model = Word2Vec(texts, size=len(texts), workers=8)
-        model.train(texts, total_examples=len(texts), epochs=10)
-        self.saveDataWithWord2VecInformation(texts, model)
-        self.writeWord2VecVectorsToJson()
-        model.save(self.WORD2VEC_MODEL_FILE_PATH)
-
-    def saveDataWithWord2VecInformation(self, texts, model):
-        corpus = model.wv.vocab
-        result = json.load(open(self.RESULT_FILE_PATH))
-        for i in range(len(texts)):
-            result[i]["Word2Vec"] = dict()
-            for word in corpus:
-                result[i]["Word2Vec"][word] = str(model[word][i])
-        with open(self.RESULT_FILE_PATH, 'w') as f:
-            out = json.dumps(result, indent=4)
-            f.write(out)
-
-    def writeWord2VecVectorsToJson(self):
-        jsonData = pd.read_json(self.RESULT_FILE_PATH)
-        word2Vec = jsonData['Word2Vec'].to_frame()
-        word2Vec['type'] = jsonData['type']
-
-        d = dict()
-        d['type'] = [word2Vec['type'][0]]
-        words = dict(word2Vec['Word2Vec'][0]).keys()
-        num=0
-        for i in words:
-            d[num] = [word2Vec['Word2Vec'][0][i]]
-            num += 1
-        for index in range(1, len(word2Vec['Word2Vec'])):
-            d['type'] += [word2Vec['type'][index]]
-            num = 0
-            for i in words:
-                d[num] += [word2Vec['Word2Vec'][index][i]]
-                num += 1
+    # source: http://nadbordrozd.github.io/blog/2016/05/20/text-classification-with-word2vec/
+    def word2VecTransformation(self, texts, data):
+        model = KeyedVectors.load_word2vec_format(self.WORD2VEC_MODEL_FILE_PATH, binary=True)
+        w2v = dict(zip(model.wv.index2word, model.wv.syn0))
+        result = np.array([
+            np.mean([model[w] for w in words if w in model]
+                    or [np.zeros(self.dim)], axis=0)
+            for words in texts
+        ])
+        df = pd.DataFrame(result, index=range(len(result)))
+        df['type'] = data['type']
+        result = df.to_dict()
         with open(self.WORD2VEC_VECTOR_FILE_PATH, 'w') as f:
-            out = json.dumps(d, indent=4)
+            out = json.dumps(result, indent=4)
             f.write(out)
 
 preprocesser = FakeNewsPreprocesser(CONFIG_FILE_PATH)
@@ -191,7 +165,8 @@ jsonData = preprocesser.readJson()
 
 texts = preprocesser.preprocessText(jsonData)
 
-preprocesser.TfIdfTransformation(texts)
-preprocesser.word2VecTransformation(texts)
+#preprocesser.TfIdfTransformation(texts)
+preprocesser.word2VecTransformation(texts, jsonData)
+
 
 print("end.")

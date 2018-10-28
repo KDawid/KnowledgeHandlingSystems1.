@@ -4,6 +4,7 @@ from gensim.models import KeyedVectors
 from gensim.models import TfidfModel
 from gensim.models import Word2Vec
 from gensim.parsing.preprocessing import preprocess_string
+import math
 import numpy as np
 import pandas as pd
 from pprint import pprint  # pretty-printer
@@ -11,8 +12,15 @@ from unidecode import unidecode
 
 CONFIG_FILE_PATH = "config.json"
 
+# more preprocess options: https://radimrehurek.com/gensim/parsing/preprocessing.html
 STOPLIST = set('for a of the and to in'.split())
 MIN_FREQUENCY = 5
+MAX_FREQUENCY = 100
+
+class PREPROCESS_TYPE(Enum):
+    NONE = 0
+    GENSIM = 1
+    IMPLEMENTED = 2
 
 class FakeNewsPreprocesser:
     JSON_FILE_PATH = None
@@ -39,7 +47,7 @@ class FakeNewsPreprocesser:
     def readJson(self):
         return pd.read_json(self.JSON_FILE_PATH)
 
-    def preprocessText(self, jsonData):
+    def preprocessText(self, jsonData, type=PREPROCESS_TYPE.NONE):
         texts = jsonData['content']
         texts = [
             text.replace("“", " ")
@@ -50,22 +58,26 @@ class FakeNewsPreprocesser:
                 .replace("—", " ")
                 .replace("-", " ")
                 .replace("  ", " ") for text in jsonData['content']]
-        texts = [preprocess_string(text) for text in texts]
+        if type == PREPROCESS_TYPE.GENSIM:
+            texts = [preprocess_string(text) for text in texts]
+        elif type == PREPROCESS_TYPE.IMPLEMENTED:
+            texts = self.implementedPreprocessing(texts)
         return texts
 
     def implementedPreprocessing(self, data):
-        texts = [[word for word in document.lower().split() if word not in STOPLIST] for document in data]
-        texts = applyMinFrequency(texts, MIN_FREQUENCY)
-        return text
+        texts = [[word.lower() for word in document if word.lower() not in STOPLIST] for document in data]
+        texts = self.applyMinFrequency(texts, minFrequency=MIN_FREQUENCY, maxFrequency=MAX_FREQUENCY)
+        return texts
 
-    def applyMinFrequency(self, texts, i):
+    def applyMinFrequency(self, texts, minFrequency=1, maxFrequency=math.inf):
         # remove words that appear only once
         from collections import defaultdict
         frequency = defaultdict(int)
         for text in texts:
             for token in text:
               frequency[token] += 1
-        return [[token for token in text if frequency[token] > i] for text in texts]
+        import operator
+        return [[token for token in text if minFrequency <= frequency[token] <= maxFrequency] for text in texts]
 
     def printDictionaryItems(self, dictionary):
         for (id, word) in dictionary.items():
@@ -163,10 +175,10 @@ preprocesser = FakeNewsPreprocesser(CONFIG_FILE_PATH)
 
 jsonData = preprocesser.readJson()
 
-texts = preprocesser.preprocessText(jsonData)
+texts = preprocesser.preprocessText(jsonData, PREPROCESS_TYPE.GENSIM)
 
-#preprocesser.TfIdfTransformation(texts)
-preprocesser.word2VecTransformation(texts, jsonData)
+preprocesser.TfIdfTransformation(texts)
+#preprocesser.word2VecTransformation(texts, jsonData)
 
 
 print("end.")

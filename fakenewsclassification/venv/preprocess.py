@@ -178,8 +178,8 @@ jsonData = preprocesser.readJson()
 
 texts = preprocesser.preprocessText(jsonData, PREPROCESS_TYPE.GENSIM)
 
-preprocesser.TfIdfTransformation(texts)
-#preprocesser.word2VecTransformation(texts, jsonData)
+#preprocesser.TfIdfTransformation(texts)
+preprocesser.word2VecTransformation(texts, jsonData)
 
 
 print("end.")

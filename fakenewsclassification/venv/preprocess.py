@@ -1,4 +1,5 @@
 import json
+from enum import Enum
 from gensim import corpora
 from gensim.models import KeyedVectors
 from gensim.models import TfidfModel

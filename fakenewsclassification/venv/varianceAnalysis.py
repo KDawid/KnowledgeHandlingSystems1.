@@ -15,8 +15,6 @@ SAMPLE_SIZE = 100
 NUMBER_OF_PCA = 3
 
 class FakeNewsVarianceAnalyzer:
-    VECTOR_FILE_PATH = None
-
     def __init__(self, configFilePath):
         with open('config.json') as json_data_file:
             config = json.load(json_data_file)

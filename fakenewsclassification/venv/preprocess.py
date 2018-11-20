@@ -24,17 +24,9 @@ class PREPROCESS_TYPE(Enum):
     NONE = 0
     GENSIM = 1
     IMPLEMENTED = 2
+    SPACY = 3
 
 class FakeNewsPreprocesser:
-    JSON_FILE_PATH = None
-    DICTIONARY_FILE_PATH = None
-    SAVE_WORDS_FILE_PATH = None
-    CORPUS_FILE_PATH = None
-    RESULT_FILE_PATH = None
-    TF_IDF_VECTOR_FILE_PATH = None
-    WORD2VEC_VECTOR_FILE_PATH = None
-    WORD2VEC_MODEL_FILE_PATH = None
-
     def __init__(self, configFilePath):
         with open(configFilePath) as json_data_file:
             config = json.load(json_data_file)
@@ -51,20 +43,32 @@ class FakeNewsPreprocesser:
         return pd.read_json(self.JSON_FILE_PATH)
 
     def preprocessText(self, jsonData, type=PREPROCESS_TYPE.NONE):
-        texts = jsonData['content']
-        texts = [
-            text.replace("“", " ")
-                .replace("…", " ")
-                .replace("‘", " ")
-                .replace("”", " ")
-                .replace("’", " ")
-                .replace("—", " ")
-                .replace("-", " ")
-                .replace("  ", " ") for text in jsonData['content']]
         if type == PREPROCESS_TYPE.GENSIM:
+            texts = jsonData['content']
+            texts = [
+                text.replace("“", " ")
+                    .replace("…", " ")
+                    .replace("‘", " ")
+                    .replace("”", " ")
+                    .replace("’", " ")
+                    .replace("—", " ")
+                    .replace("-", " ")
+                    .replace("  ", " ") for text in jsonData['content']]
             texts = [preprocess_string(text) for text in texts]
         elif type == PREPROCESS_TYPE.IMPLEMENTED:
+            texts = jsonData['content']
+            texts = [
+                text.replace("“", " ")
+                    .replace("…", " ")
+                    .replace("‘", " ")
+                    .replace("”", " ")
+                    .replace("’", " ")
+                    .replace("—", " ")
+                    .replace("-", " ")
+                    .replace("  ", " ") for text in jsonData['content']]
             texts = self.implementedPreprocessing(texts)
+        elif type == PREPROCESS_TYPE.SPACY:
+            texts = self.callSpacy(jsonData)
         return texts
 
     def implementedPreprocessing(self, data):
@@ -155,8 +159,7 @@ class FakeNewsPreprocesser:
         dictionary = pd.read_csv(self.DICTIONARY_FILE_PATH)
         return len(dictionary)
 
-    def writeTfIdfWordVectorsToJson(self):
-        jsonData = pd.read_json(self.RESULT_FILE_PATH)
+    def writeTfIdfWordVectorsToJson(self, jsonData):
         vectorLength = self.getNumberOfVectors()
 
         tfIdf = jsonData['TF-IDF'].to_frame()
@@ -181,7 +184,7 @@ class FakeNewsPreprocesser:
             out = json.dumps(d, indent=4)
             f.write(out)
 
-    def TfIdfTransformation(self, texts):
+    def tfIdfTransformation(self, texts, jsonData):
         #ez itt nincs jó helyen
         from gensim.corpora import Dictionary
         dictionary = Dictionary(texts)
@@ -193,7 +196,7 @@ class FakeNewsPreprocesser:
         preprocesser.saveTfIdfCorpus(model, corpus)
         preprocesser.saveDataWithTfIdfInformation(model, corpus)
         preprocesser.saveDictionary(dictionary)
-        preprocesser.writeTfIdfWordVectorsToJson()
+        preprocesser.writeTfIdfWordVectorsToJson(jsonData)
 
     # source: http://nadbordrozd.github.io/blog/2016/05/20/text-classification-with-word2vec/
     def word2VecTransformation(self, texts, data):
@@ -218,8 +221,8 @@ jsonData = preprocesser.readJson()
 #texts = preprocesser.preprocessText(jsonData, PREPROCESS_TYPE.GENSIM)
 texts = preprocesser.callSpacy(jsonData)
 
-preprocesser.TfIdfTransformation(texts)
-#preprocesser.word2VecTransformation(texts, jsonData)
+preprocesser.tfIdfTransformation(texts, jsonData)
+preprocesser.word2VecTransformation(texts, jsonData)
 
 
 print("end.")

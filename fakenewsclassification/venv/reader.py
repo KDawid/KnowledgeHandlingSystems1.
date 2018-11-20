@@ -4,15 +4,12 @@ from sklearn.utils import shuffle
 
 CONFIG_FILE_PATH = "config.json"
 
-USED_CATEGORY_SET = ['unreliable', 'conspiracy', 'clickbait'] # for 3 mb dataset
-NUMBER_OF_INSTANCES_IN_CATEGORIES = 100 # for 3 mb dataset
-#USED_CATEGORY_SET = ['conspiracy', 'political', 'fake'] # for 300 mb dataset
-#NUMBER_OF_INSTANCES_IN_CATEGORIES = 5000 # for 300 mb dataset
+#USED_CATEGORY_SET = ['unreliable', 'conspiracy', 'clickbait'] # for 3 mb dataset
+#NUMBER_OF_INSTANCES_IN_CATEGORIES = 100 # for 3 mb dataset
+USED_CATEGORY_SET = ['conspiracy', 'political', 'fake' ] # for 300 mb dataset
+NUMBER_OF_INSTANCES_IN_CATEGORIES = 5000 # for 300 mb dataset
 
 class FakeNewsReader:
-    CSV_FILE_PATH = None
-    JSON_FILE_PATH = None
-
     def __init__(self, configFilePath):
         with open(configFilePath) as json_data_file:
             config = json.load(json_data_file)

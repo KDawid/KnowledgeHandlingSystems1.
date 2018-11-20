@@ -5,10 +5,9 @@ import pandas as pd
 import sklearn
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
-from sklearn.utils import shuffle
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import LinearSVC
-from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.svm import NuSVC
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -29,30 +28,22 @@ class Classifiers(Enum):
     #KEY = [Classifier function, classifier name]
     DECISION_TREE = [DecisionTreeClassifier, "Decision tree"]
     SVM = [LinearSVC, "Linear SVM"]
+    SVM_LIN = [NuSVC, "SVM with linear kernel"]
+    SVM_RBF = [NuSVC, "SVM with RBF kernel"]
+    SVM_POL = [NuSVC, "SVM with polinomial kernel"]
+    SVM_SIG = [NuSVC, "SVM with sigmoid kernel"]
     #NAIVE_BAYES = [MultinomialNB, "Naive Bayes"]
     KNN = [KNeighborsClassifier, "K-Nearest Neighbors"]
     ADA_BOOST = [AdaBoostClassifier, "ADA boost"]
-    RANDOM_FOREST = [AdaBoostClassifier, "Random forest"]
+    RANDOM_FOREST = [RandomForestClassifier, "Random forest"]
     GRADIENT_BOOST = [GradientBoostingClassifier, "Gradient boost"]
 
 class FakeNewsClassifier:
-    VECTOR_FILE_PATH = None
-
-    dataset = None
-    dataset_labels = None
-    train_data = None
-    train_labels = None
-    test_data = None
-    test_labels = None
-
-    classifierType = None
-    classifierName = None
-
     def __init__(self, configFilePath):
         with open('config.json') as json_data_file:
             config = json.load(json_data_file)
-        self.VECTOR_FILE_PATH = config["TF_IDF_VECTOR_FILE_PATH"] [:-5] + "_reduced.json"
-        #self.VECTOR_FILE_PATH = config["WORD2VEC_VECTOR_FILE_PATH"] #[:-5] + "_reduced.json"
+        #self.VECTOR_FILE_PATH = config["TF_IDF_VECTOR_FILE_PATH"] [:-5] + "_reduced.json"
+        self.VECTOR_FILE_PATH = config["WORD2VEC_VECTOR_FILE_PATH"] #[:-5] + "_reduced.json"
         self.readData()
 
     def readData(self):
@@ -67,7 +58,16 @@ class FakeNewsClassifier:
 
     def buildModel(self, train_data, train_labels):
         print("%s: " % self.classifierName)
-        model = self.classifierType()
+        if self.classifierName == "SVM with sigmoid kernel":
+            model = NuSVC(kernel='sigmoid')
+        elif self.classifierName == "SVM with polinomial kernel":
+            model = NuSVC(kernel='poly')
+        elif self.classifierName == "SVM with sigmoid kernel":
+            model = NuSVC(kernel='sigmoid')
+        elif self.classifierName == "SVM with RBF kernel":
+            model = NuSVC()
+        else:
+            model = self.classifierType()
         model.fit(train_data, train_labels)
         return model
 
@@ -106,8 +106,18 @@ class FakeNewsClassifier:
     def findBestClassifier(self, eval=Evaluation.BOTH):
         result = dict()
         for i in Classifiers:
-            result[i.value[1]] = classifier.classify(i, eval)
+            result[i.value[1]] = self.classify(i, eval)
             print("-----------------------------------------------------------------")
+        self.printResult(result)
+
+    def findBestSvmKernel(self, eval=Evaluation.BOTH):
+        result = dict()
+        for i in [i for i in Classifiers if "SVM" in i.value[1]]:
+            result[i.value[1]] = self.classify(i, Evaluation.BOTH)
+            print("-----------------------------------------------------------------")
+        self.printResult(result)
+
+    def printResult(self, result):
         if "test" in result[next(iter(result))]:
             print("Best accuracy using validation set: %s, classifier: %s" % max(
                 [(value["test"], key) for key, value in result.items()]))
@@ -117,7 +127,9 @@ class FakeNewsClassifier:
 
 classifier = FakeNewsClassifier(CONFIG_FILE_PATH)
 
-#classifier.classify(Classifiers.SVM, Evaluation.CROSS_VALIDATION)
-classifier.findBestClassifier(Evaluation.BOTH)
+classifier.classify(Classifiers.DECISION_TREE, Evaluation.VALIDATION_SET)
+
+#classifier.findBestSvmKernel(Evaluation.BOTH)
+#classifier.findBestClassifier(Evaluation.BOTH)
 
 print("end.")

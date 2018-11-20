@@ -1,6 +1,7 @@
 import json
 from enum import Enum
 from gensim import corpora
+import spacy
 from gensim.models import KeyedVectors
 from gensim.models import TfidfModel
 from gensim.models import Word2Vec
@@ -12,6 +13,7 @@ from pprint import pprint  # pretty-printer
 from unidecode import unidecode
 
 CONFIG_FILE_PATH = "config.json"
+spacy_nlp = spacy.load('en_core_web_sm')
 
 # more preprocess options: https://radimrehurek.com/gensim/parsing/preprocessing.html
 STOPLIST = set('for a of the and to in'.split())
@@ -80,6 +82,40 @@ class FakeNewsPreprocesser:
         import operator
         return [[token for token in text if minFrequency <= frequency[token] <= maxFrequency] for text in texts]
 
+    def preprocessWithSpacy(self, text):
+        doc = spacy_nlp(text)
+        stopwords = spacy.lang.en.STOP_WORDS
+        tokens = []
+        for token in doc:
+            if token.text not in stopwords and \
+                    not token.text.isnumeric() and \
+                    not token.is_punct and \
+                    not token.is_digit and \
+                    not token.is_space and \
+                    not token.like_url and \
+                    len(token) > 1 and \
+                    "," not in token.text and \
+                    "’" not in token.text:
+                tokens.append(token.text)
+
+        tokens = [token.lower() for token in tokens]
+        return tokens
+
+    def detectBigrams(self, text):
+        from gensim.models.phrases import Phrases, Phraser
+        phrases = Phrases(text, min_count=20)
+        bigram = Phraser(phrases)
+        for token in bigram[text]:
+            if '_' in token:
+                text.append(token)
+        return text
+
+    def callSpacy(self, jsonData):
+        texts = jsonData['content']
+        texts = [self.preprocessWithSpacy(text) for text in texts]
+        texts = [self.detectBigrams(text) for text in texts]
+        return texts
+
     def printDictionaryItems(self, dictionary):
         for (id, word) in dictionary.items():
             print(id, word)
@@ -108,7 +144,7 @@ class FakeNewsPreprocesser:
 
     def saveDataWithTfIdfInformation(self, model, corpus):
         tfCorpus = [model[corpus[i]] for i in range(len(corpus))]
-        result = json.load(open(self.RESULT_FILE_PATH))
+        result = json.load(open(self.JSON_FILE_PATH))
         for i in range(len(tfCorpus)):
             result[i]["TF-IDF"] = dict(tfCorpus[i])
         with open(self.RESULT_FILE_PATH, 'w') as f:
@@ -146,7 +182,10 @@ class FakeNewsPreprocesser:
             f.write(out)
 
     def TfIdfTransformation(self, texts):
-        dictionary = corpora.Dictionary(texts)
+        #ez itt nincs jó helyen
+        from gensim.corpora import Dictionary
+        dictionary = Dictionary(texts)
+        dictionary.filter_extremes(no_below=20, no_above=0.5)
         corpus = [dictionary.doc2bow(text) for text in texts]
         model = TfidfModel(corpus)  # fit model
 
@@ -176,10 +215,11 @@ preprocesser = FakeNewsPreprocesser(CONFIG_FILE_PATH)
 
 jsonData = preprocesser.readJson()
 
-texts = preprocesser.preprocessText(jsonData, PREPROCESS_TYPE.GENSIM)
+#texts = preprocesser.preprocessText(jsonData, PREPROCESS_TYPE.GENSIM)
+texts = preprocesser.callSpacy(jsonData)
 
-#preprocesser.TfIdfTransformation(texts)
-preprocesser.word2VecTransformation(texts, jsonData)
+preprocesser.TfIdfTransformation(texts)
+#preprocesser.word2VecTransformation(texts, jsonData)
 
 
 print("end.")

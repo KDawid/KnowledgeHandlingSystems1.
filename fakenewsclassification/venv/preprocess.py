@@ -2,6 +2,7 @@ import json
 from enum import Enum
 from gensim import corpora
 import spacy
+from gensim.corpora import Dictionary
 from gensim.models import KeyedVectors
 from gensim.models import TfidfModel
 from gensim.models import Word2Vec
@@ -13,7 +14,7 @@ from pprint import pprint  # pretty-printer
 from unidecode import unidecode
 
 CONFIG_FILE_PATH = "config.json"
-spacy_nlp = spacy.load('en_core_web_sm')
+#spacy_nlp = spacy.load('en_core_web_sm')
 
 # more preprocess options: https://radimrehurek.com/gensim/parsing/preprocessing.html
 STOPLIST = set('for a of the and to in'.split())
@@ -185,8 +186,6 @@ class FakeNewsPreprocesser:
             f.write(out)
 
     def tfIdfTransformation(self, texts, jsonData):
-        #ez itt nincs jó helyen
-        from gensim.corpora import Dictionary
         dictionary = Dictionary(texts)
         dictionary.filter_extremes(no_below=20, no_above=0.5)
         corpus = [dictionary.doc2bow(text) for text in texts]
@@ -214,15 +213,45 @@ class FakeNewsPreprocesser:
             out = json.dumps(result, indent=4)
             f.write(out)
 
+    def word2VecTfIdfTransformation(self, texts, data):
+        model = KeyedVectors.load_word2vec_format(self.WORD2VEC_MODEL_FILE_PATH, binary=True)
+        w2v = dict(zip(model.wv.index2word, model.wv.syn0))
+
+        dim = len(w2v.items().__next__())
+
+        from sklearn.feature_extraction.text import TfidfVectorizer
+        tfidf = TfidfVectorizer(analyzer=lambda texts: texts)
+        tfidf.fit(texts)
+
+        from collections import defaultdict
+
+        max_idf = max(tfidf.idf_)
+        word2weight = defaultdict(
+            lambda: max_idf, [(w, tfidf.idf_[i]) for w, i in tfidf.vocabulary_.items()])
+
+        result = np.array([
+            np.mean([w2v[w] * word2weight[w]
+                     for w in words if w in w2v] or
+                    [np.zeros(dim)], axis=0)
+            for words in texts
+        ])
+        df = pd.DataFrame(result, index=range(len(result)))
+        df['type'] = data['type']
+        result = df.to_dict()
+        with open(self.WORD2VEC_VECTOR_FILE_PATH, 'w') as f:
+            out = json.dumps(result, indent=4)
+            f.write(out)
+
 preprocesser = FakeNewsPreprocesser(CONFIG_FILE_PATH)
 
 jsonData = preprocesser.readJson()
 
-#texts = preprocesser.preprocessText(jsonData, PREPROCESS_TYPE.GENSIM)
-texts = preprocesser.callSpacy(jsonData)
+texts = preprocesser.preprocessText(jsonData, PREPROCESS_TYPE.GENSIM)
+#texts = preprocesser.callSpacy(jsonData)
 
-preprocesser.tfIdfTransformation(texts, jsonData)
-preprocesser.word2VecTransformation(texts, jsonData)
+#preprocesser.tfIdfTransformation(texts, jsonData)
+#preprocesser.word2VecTransformation(texts, jsonData)
+preprocesser.word2VecTfIdfTransformation(texts, jsonData)
 
 
 print("end.")

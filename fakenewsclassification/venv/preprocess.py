@@ -12,9 +12,10 @@ import numpy as np
 import pandas as pd
 from pprint import pprint  # pretty-printer
 from unidecode import unidecode
+from collections import defaultdict
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 CONFIG_FILE_PATH = "config.json"
-spacy_nlp = spacy.load('en_core_web_sm')
 
 # more preprocess options: https://radimrehurek.com/gensim/parsing/preprocessing.html
 STOPLIST = set('for a of the and to in'.split())
@@ -70,6 +71,7 @@ class FakeNewsPreprocesser:
                     .replace("  ", " ") for text in jsonData['content']]
             texts = self.implementedPreprocessing(texts)
         elif type == PREPROCESS_TYPE.SPACY:
+            self.spacy_nlp = spacy.load('en_core_web_sm')
             texts = self.callSpacy(jsonData)
         return texts
 
@@ -89,7 +91,7 @@ class FakeNewsPreprocesser:
         return [[token for token in text if minFrequency <= frequency[token] <= maxFrequency] for text in texts]
 
     def preprocessWithSpacy(self, text):
-        doc = spacy_nlp(text)
+        doc = self.spacy_nlp(text)
         stopwords = spacy.lang.en.STOP_WORDS
         tokens = []
         for token in doc:
@@ -148,37 +150,28 @@ class FakeNewsPreprocesser:
                     f.write(",")
             f.write("]")
 
-    def saveDataWithTfIdfInformation(self, model, corpus):
-        tfCorpus = [model[corpus[i]] for i in range(len(corpus))]
-        result = json.load(open(self.JSON_FILE_PATH))
-        for i in range(len(tfCorpus)):
-            result[i]["TF-IDF"] = dict(tfCorpus[i])
-        with open(self.RESULT_FILE_PATH, 'w') as f:
-            out = json.dumps(result, indent=4)
-            f.write(out)
-
     def getNumberOfVectors(self):
         dictionary = pd.read_csv(self.DICTIONARY_FILE_PATH)
         return len(dictionary)
 
-    def writeTfIdfWordVectorsToJson(self, jsonData):
+    def writeTfIdfWordVectorsToJson(self, jsonData, model, corpus):
         vectorLength = self.getNumberOfVectors()
-
-        tfIdf = jsonData['TF-IDF'].to_frame()
+        tfCorpus = [model[corpus[i]] for i in range(len(corpus))]
+        tfIdf = dict()
         tfIdf['type'] = jsonData['type']
 
         d = dict()
         d['type'] = [tfIdf['type'][0]]
         for i in range(vectorLength):
-            if str(i) in tfIdf["TF-IDF"][0]:
-                d[str(i)] = [tfIdf["TF-IDF"][0][str(i)]]
+            if i in [key for (key, value) in tfCorpus[0]]:
+                d[str(i)] = [value for (key, value) in tfCorpus[0] if key == i]
             else:
                 d[str(i)] = [0.0]
-        for index in range(1, len(tfIdf["TF-IDF"])):
+        for index in range(1, len(tfIdf['type'])):
             d['type'] += [tfIdf['type'][index]]
             for i in range(vectorLength):
-                if str(i) in tfIdf["TF-IDF"][index]:
-                    d[str(i)] += [tfIdf["TF-IDF"][index][str(i)]]
+                if i in [key for (key, value) in tfCorpus[index]]:
+                    d[str(i)] += [value for (key, value) in tfCorpus[index] if key == i]
                 else:
                     d[str(i)] += [0.0]
 
@@ -194,9 +187,8 @@ class FakeNewsPreprocesser:
 
         preprocesser.saveDictionaryWords(dictionary)
         preprocesser.saveTfIdfCorpus(model, corpus)
-        preprocesser.saveDataWithTfIdfInformation(model, corpus)
         preprocesser.saveDictionary(dictionary)
-        preprocesser.writeTfIdfWordVectorsToJson(jsonData)
+        preprocesser.writeTfIdfWordVectorsToJson(jsonData, model, corpus)
 
     # source: http://nadbordrozd.github.io/blog/2016/05/20/text-classification-with-word2vec/
     def word2VecTransformation(self, texts, data):
@@ -221,11 +213,8 @@ class FakeNewsPreprocesser:
 
         dim = len(next(iter(w2v.items())))
 
-        from sklearn.feature_extraction.text import TfidfVectorizer
         tfidf = TfidfVectorizer(analyzer=lambda x: x)
         tfidf.fit(texts)
-
-        from collections import defaultdict
 
         max_idf = max(tfidf.idf_)
         print(tfidf.vocabulary_.items())
@@ -249,12 +238,10 @@ preprocesser = FakeNewsPreprocesser(CONFIG_FILE_PATH)
 
 jsonData = preprocesser.readJson()
 
-#texts = preprocesser.preprocessText(jsonData, PREPROCESS_TYPE.GENSIM)
-texts = preprocesser.callSpacy(jsonData)
+texts = preprocesser.preprocessText(jsonData, PREPROCESS_TYPE.SPACY)
 
-#preprocesser.tfIdfTransformation(texts, jsonData)
+preprocesser.tfIdfTransformation(texts, jsonData)
 #preprocesser.word2VecTransformation(texts, jsonData)
-preprocesser.word2VecTfIdfTransformation(texts, jsonData)
-
+#preprocesser.word2VecTfIdfTransformation(texts, jsonData)
 
 print("end.")

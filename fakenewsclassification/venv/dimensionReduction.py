@@ -12,6 +12,7 @@ class FakeNewsDimensionReduction:
             config = json.load(json_data_file)
         self.VECTOR_FILE_PATH = config["TF_IDF_VECTOR_FILE_PATH"]
         #self.VECTOR_FILE_PATH = config["WORD2VEC_VECTOR_FILE_PATH"]
+        #self.WORD2VEC_TFIDF_VECTOR_FILE_PATH = config["WORD2VEC_TFIDF_VECTOR_FILE_PATH"]
 
     def readVectors(self):
         return pd.read_json(self.VECTOR_FILE_PATH)

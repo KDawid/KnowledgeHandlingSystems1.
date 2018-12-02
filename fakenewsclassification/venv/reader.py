@@ -2,13 +2,6 @@ import json
 import pandas as pd
 from sklearn.utils import shuffle
 
-CONFIG_FILE_PATH = "config.json"
-
-USED_CATEGORY_SET = ['unreliable', 'conspiracy', 'clickbait'] # for 3 mb dataset
-NUMBER_OF_INSTANCES_IN_CATEGORIES = 100 # for 3 mb dataset
-#USED_CATEGORY_SET = ['conspiracy', 'political', 'fake' ] # for 300 mb dataset
-#NUMBER_OF_INSTANCES_IN_CATEGORIES = 5000 # for 300 mb dataset
-
 class FakeNewsReader:
     def __init__(self, configFilePath):
         with open(configFilePath) as json_data_file:
@@ -60,14 +53,3 @@ class FakeNewsReader:
         out = jsonData.to_json(orient='records')
         with open(self.JSON_FILE_PATH, 'w') as f:
             f.write(out)
-
-reader = FakeNewsReader(CONFIG_FILE_PATH)
-reader.convertCsvTojson()
-
-jsonData = reader.readJson()
-reader.printCategoryOccurences(jsonData)
-
-jsonData = reader.filterCategories(jsonData, USED_CATEGORY_SET, NUMBER_OF_INSTANCES_IN_CATEGORIES)
-reader.writeJsonData(jsonData)
-
-print("end.")

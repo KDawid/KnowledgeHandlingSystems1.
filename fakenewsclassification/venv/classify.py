@@ -39,12 +39,10 @@ class Classifiers(Enum):
     GRADIENT_BOOST = [GradientBoostingClassifier, "Gradient boost"]
 
 class FakeNewsClassifier:
-    def __init__(self, configFilePath):
+    def __init__(self, configFilePath, dataFilePath):
         with open('config.json') as json_data_file:
             config = json.load(json_data_file)
-        #self.VECTOR_FILE_PATH = config["TF_IDF_VECTOR_FILE_PATH"] [:-5] + "_reduced.json"
-        self.VECTOR_FILE_PATH = config["WORD2VEC_VECTOR_FILE_PATH"] #[:-5] + "_reduced.json"
-        #self.WORD2VEC_TFIDF_VECTOR_FILE_PATH = config["WORD2VEC_TFIDF_VECTOR_FILE_PATH"] #[:-5] + "_reduced.json"
+        self.VECTOR_FILE_PATH = dataFilePath
         self.readData()
 
     def readData(self):
@@ -58,7 +56,7 @@ class FakeNewsClassifier:
         self.classifierName = type.value[1]
 
     def buildModel(self, train_data, train_labels):
-        print("%s: " % self.classifierName)
+        #print("%s: " % self.classifierName)
         if self.classifierName == "SVM with sigmoid kernel":
             model = NuSVC(kernel='sigmoid')
         elif self.classifierName == "SVM with polinomial kernel":
@@ -74,17 +72,17 @@ class FakeNewsClassifier:
 
     def evaluateOnValidationData(self, model):
         test_pred = model.predict(self.test_data)
-        print(confusion_matrix(self.test_labels, test_pred))
-        print(classification_report(self.test_labels, test_pred))
+        #print(confusion_matrix(self.test_labels, test_pred))
+        #print(classification_report(self.test_labels, test_pred))
         score = model.score(self.test_data, self.test_labels)
-        print("Validation score: %s" % score)
+        #print("Validation score: %s" % score)
         return score
 
     def crossValidate(self, model):
         scores = sklearn.model_selection.cross_val_score(model, self.dataset, self.dataset_labels,
                                                          cv=CROSS_VALIDATION)
         score = np.average(scores)
-        print("K-fold score: %s" % score)
+        #print("K-fold score: %s" % score)
         return score
 
     def makeClassification(self, eval):
@@ -108,29 +106,26 @@ class FakeNewsClassifier:
         result = dict()
         for i in Classifiers:
             result[i.value[1]] = self.classify(i, eval)
-            print("-----------------------------------------------------------------")
+            #print("-----------------------------------------------------------------")
         self.printResult(result)
 
     def findBestSvmKernel(self, eval=Evaluation.BOTH):
         result = dict()
         for i in [i for i in Classifiers if "SVM" in i.value[1]]:
             result[i.value[1]] = self.classify(i, Evaluation.BOTH)
-            print("-----------------------------------------------------------------")
+            #print("-----------------------------------------------------------------")
         self.printResult(result)
 
     def printResult(self, result):
         if "test" in result[next(iter(result))]:
-            print("Best accuracy using validation set: %s, classifier: %s" % max(
+            print("Accuracy on test set")
+            for i in result:
+                print("\t%s: %s" % (i, result[i]['test']))
+            print("\tBest accuracy using validation set: %s, classifier: %s" % max(
                 [(value["test"], key) for key, value in result.items()]))
         if "cross" in result[next(iter(result))]:
-            print("Best accuracy using cross-validation: %s, classifier: %s" % max(
+            print("Accuracy with cross-validation")
+            for i in result:
+                print("\t%s: %s" % (i, result[i]['cross']))
+            print("\tBest accuracy using cross-validation: %s, classifier: %s" % max(
                 [(value["cross"], key) for key, value in result.items()]))
-
-classifier = FakeNewsClassifier(CONFIG_FILE_PATH)
-
-classifier.classify(Classifiers.DECISION_TREE, Evaluation.VALIDATION_SET)
-
-#classifier.findBestSvmKernel(Evaluation.BOTH)
-#classifier.findBestClassifier(Evaluation.BOTH)
-
-print("end.")

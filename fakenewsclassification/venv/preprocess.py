@@ -15,18 +15,19 @@ from unidecode import unidecode
 from collections import defaultdict
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-CONFIG_FILE_PATH = "config.json"
-
-# more preprocess options: https://radimrehurek.com/gensim/parsing/preprocessing.html
 STOPLIST = set('for a of the and to in'.split())
 MIN_FREQUENCY = 5
 MAX_FREQUENCY = 100
 
 class PREPROCESS_TYPE(Enum):
-    NONE = 0
-    GENSIM = 1
-    IMPLEMENTED = 2
-    SPACY = 3
+    GENSIM = "gensim"
+    SPACY = "spacy"
+    #IMPLEMENTED = 2
+
+class TRANSFORMATION_TYPE(Enum):
+    TF_IDF = "tf-idf"
+    WORD2VEC = "word2vec"
+    TFIDF_W2V = "w2v-tfidf"
 
 class FakeNewsPreprocesser:
     def __init__(self, configFilePath):
@@ -37,20 +38,18 @@ class FakeNewsPreprocesser:
         self.SAVE_WORDS_FILE_PATH = config["SAVE_WORDS_FILE_PATH"]
         self.CORPUS_FILE_PATH = config["CORPUS_FILE_PATH"]
         self.RESULT_FILE_PATH = config["RESULT_FILE_PATH"]
-        self.TF_IDF_VECTOR_FILE_PATH = config["TF_IDF_VECTOR_FILE_PATH"]
-        self.WORD2VEC_VECTOR_FILE_PATH = config["WORD2VEC_VECTOR_FILE_PATH"]
-        self.WORD2VEC_TFIDF_VECTOR_FILE_PATH = config["WORD2VEC_TFIDF_VECTOR_FILE_PATH"]
         self.WORD2VEC_MODEL_FILE_PATH = config["WORD2VEC_MODEL_FILE_PATH"]
 
     def readJson(self):
         return pd.read_json(self.JSON_FILE_PATH)
 
-    def preprocessText(self, jsonData, type=PREPROCESS_TYPE.NONE):
+    def preprocessText(self, jsonData, type):
+        texts = jsonData['content']
         if type == PREPROCESS_TYPE.GENSIM:
-            texts = jsonData['content']
             texts = [
                 text.replace("“", " ")
                     .replace("…", " ")
+                    .replace(",", " ")
                     .replace("‘", " ")
                     .replace("”", " ")
                     .replace("’", " ")
@@ -58,18 +57,6 @@ class FakeNewsPreprocesser:
                     .replace("-", " ")
                     .replace("  ", " ") for text in jsonData['content']]
             texts = [preprocess_string(text) for text in texts]
-        elif type == PREPROCESS_TYPE.IMPLEMENTED:
-            texts = jsonData['content']
-            texts = [
-                text.replace("“", " ")
-                    .replace("…", " ")
-                    .replace("‘", " ")
-                    .replace("”", " ")
-                    .replace("’", " ")
-                    .replace("—", " ")
-                    .replace("-", " ")
-                    .replace("  ", " ") for text in jsonData['content']]
-            texts = self.implementedPreprocessing(texts)
         elif type == PREPROCESS_TYPE.SPACY:
             self.spacy_nlp = spacy.load('en_core_web_sm')
             texts = self.callSpacy(jsonData)
@@ -154,7 +141,7 @@ class FakeNewsPreprocesser:
         dictionary = pd.read_csv(self.DICTIONARY_FILE_PATH)
         return len(dictionary)
 
-    def writeTfIdfWordVectorsToJson(self, jsonData, model, corpus):
+    def writeTfIdfWordVectorsToJson(self, jsonData, model, corpus, filePath):
         vectorLength = self.getNumberOfVectors()
         tfCorpus = [model[corpus[i]] for i in range(len(corpus))]
         tfIdf = dict()
@@ -175,23 +162,25 @@ class FakeNewsPreprocesser:
                 else:
                     d[str(i)] += [0.0]
 
-        with open(self.TF_IDF_VECTOR_FILE_PATH, 'w') as f:
+        with open(filePath, 'w') as f:
             out = json.dumps(d, indent=4)
             f.write(out)
 
-    def tfIdfTransformation(self, texts, jsonData):
+    def tfIdfTransformation(self, texts, jsonData, filePath):
+        #texts = texts.values.tolist()
+        #texts = [text.split(" ") for text in texts]
         dictionary = Dictionary(texts)
         dictionary.filter_extremes(no_below=20, no_above=0.5)
         corpus = [dictionary.doc2bow(text) for text in texts]
         model = TfidfModel(corpus)  # fit model
 
-        preprocesser.saveDictionaryWords(dictionary)
-        preprocesser.saveTfIdfCorpus(model, corpus)
-        preprocesser.saveDictionary(dictionary)
-        preprocesser.writeTfIdfWordVectorsToJson(jsonData, model, corpus)
+        self.saveDictionaryWords(dictionary)
+        self.saveTfIdfCorpus(model, corpus)
+        self.saveDictionary(dictionary)
+        self.writeTfIdfWordVectorsToJson(jsonData, model, corpus, filePath)
 
     # source: http://nadbordrozd.github.io/blog/2016/05/20/text-classification-with-word2vec/
-    def word2VecTransformation(self, texts, data):
+    def word2VecTransformation(self, texts, data, filePath):
         model = KeyedVectors.load_word2vec_format(self.WORD2VEC_MODEL_FILE_PATH, binary=True)
         word2vec = dict(zip(model.wv.index2word, model.wv.syn0))
         dim = len(next(iter(word2vec.items())))
@@ -203,11 +192,11 @@ class FakeNewsPreprocesser:
         df = pd.DataFrame(result, index=range(len(result)))
         df['type'] = data['type']
         result = df.to_dict()
-        with open(self.WORD2VEC_VECTOR_FILE_PATH, 'w') as f:
+        with open(filePath, 'w') as f:
             out = json.dumps(result, indent=4)
             f.write(out)
 
-    def word2VecTfIdfTransformation(self, texts, data):
+    def word2VecTfIdfTransformation(self, texts, data, filePath):
         model = KeyedVectors.load_word2vec_format(self.WORD2VEC_MODEL_FILE_PATH, binary=True)
         w2v = dict(zip(model.wv.index2word, model.wv.syn0))
 
@@ -217,7 +206,6 @@ class FakeNewsPreprocesser:
         tfidf.fit(texts)
 
         max_idf = max(tfidf.idf_)
-        print(tfidf.vocabulary_.items())
         word2weight = defaultdict(
             lambda: max_idf, [(w, tfidf.idf_[i]) for w, i in tfidf.vocabulary_.items()])
 
@@ -230,18 +218,14 @@ class FakeNewsPreprocesser:
         df = pd.DataFrame(result, index=range(len(result)))
         df['type'] = data['type']
         result = df.to_dict()
-        with open(self.WORD2VEC_TFIDF_VECTOR_FILE_PATH, 'w') as f:
+        with open(filePath, 'w') as f:
             out = json.dumps(result, indent=4)
             f.write(out)
 
-preprocesser = FakeNewsPreprocesser(CONFIG_FILE_PATH)
-
-jsonData = preprocesser.readJson()
-
-texts = preprocesser.preprocessText(jsonData, PREPROCESS_TYPE.SPACY)
-
-preprocesser.tfIdfTransformation(texts, jsonData)
-#preprocesser.word2VecTransformation(texts, jsonData)
-#preprocesser.word2VecTfIdfTransformation(texts, jsonData)
-
-print("end.")
+    def transformData(self, texts, jsonData, type, filePath):
+        if type == TRANSFORMATION_TYPE.TF_IDF:
+            self.tfIdfTransformation(texts, jsonData, filePath)
+        elif type == TRANSFORMATION_TYPE.WORD2VEC:
+            self.word2VecTransformation(texts, jsonData, filePath)
+        elif type == TRANSFORMATION_TYPE.TFIDF_W2V:
+            self.word2VecTfIdfTransformation(texts, jsonData, filePath)

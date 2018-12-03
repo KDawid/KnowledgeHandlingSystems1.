@@ -63,7 +63,10 @@ def varianceAnalysis(vectorFilePath):
 
 def classify(vectorFilePath):
     classifier = FakeNewsClassifier(CONFIG_FILE_PATH, vectorFilePath)
-    classifier.findBestClassifier(Evaluation.BOTH)
+    result = classifier.findBestClassifier(Evaluation.BOTH)
+    with open(vectorFilePath[:-5] + "_result.json", 'w') as f:
+        out = json.dumps(result, indent=4)
+        f.write(out)
 
 def updateFilePaths():
     for i in list(VECTOR_FILE_PATHS):

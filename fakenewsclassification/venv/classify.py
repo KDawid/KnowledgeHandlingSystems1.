@@ -108,6 +108,7 @@ class FakeNewsClassifier:
             result[i.value[1]] = self.classify(i, eval)
             #print("-----------------------------------------------------------------")
         self.printResult(result)
+        return result
 
     def findBestSvmKernel(self, eval=Evaluation.BOTH):
         result = dict()
@@ -115,6 +116,7 @@ class FakeNewsClassifier:
             result[i.value[1]] = self.classify(i, Evaluation.BOTH)
             #print("-----------------------------------------------------------------")
         self.printResult(result)
+        return result
 
     def printResult(self, result):
         if "test" in result[next(iter(result))]:

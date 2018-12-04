@@ -11,19 +11,20 @@ class FakeNewsDimensionReduction:
     def readVectors(self):
         return pd.read_json(self.VECTOR_FILE_PATH)
 
-    def pcaDimensionReduction(self, vectors, numberOfComponents):
+    def pcaDimensionReduction(self, vectors, savedVariance):
         features = [i for i in vectors.columns.values if i != "type"]
 
-        pca = PCA(n_components=numberOfComponents)
+        pca = PCA(n_components=savedVariance)
         pca_result = pca.fit_transform(vectors[features].values)
+        n = pca_result.shape[1]
 
         result = dict()
         result["type"] = []
         for i in vectors["type"]:
             result["type"] += [i]
-        for i in range(numberOfComponents):
+        for i in range(n):
             result[str(i)] = []
-        for i in range(numberOfComponents):
+        for i in range(n):
             key = str(i)
             for j in range(len(vectors["type"])):
                 result[key] += [pca_result[j, i]]

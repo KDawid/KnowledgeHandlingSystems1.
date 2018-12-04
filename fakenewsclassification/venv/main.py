@@ -21,7 +21,7 @@ NUMBER_OF_INSTANCES_IN_CATEGORIES = 100 # for 3 mb dataset
 # more preprocess options: https://radimrehurek.com/gensim/parsing/preprocessing.html
 
 #for dimension reduction
-NUMBER_OF_ATTRIBUTES = 300
+SAVED_VARIANCE = 0.9
 
 #for varianceAnalysis
 SAMPLE_SIZE = 100
@@ -49,7 +49,7 @@ def reduceDimensions(vectorType):
     vectors = reducer.readVectors()
     result_file_path = vectorType[:-5] + "_reduced.json"
 
-    result = reducer.pcaDimensionReduction(vectors, NUMBER_OF_ATTRIBUTES)
+    result = reducer.pcaDimensionReduction(vectors, SAVED_VARIANCE)
     reducer.writeReducedVector(result, result_file_path)
 
 def varianceAnalysis(vectorFilePath):

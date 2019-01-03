@@ -17,6 +17,7 @@ class FakeNewsDimensionReduction:
         pca = PCA(n_components=savedVariance)
         pca_result = pca.fit_transform(vectors[features].values)
         n = pca_result.shape[1]
+        print("Original number of vectors: %i, after reduction: %i" % (len(vectors), n))
 
         result = dict()
         result["type"] = []

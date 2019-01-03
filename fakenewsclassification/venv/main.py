@@ -7,13 +7,14 @@ from dimensionReduction import FakeNewsDimensionReduction
 from varianceAnalysis import FakeNewsVarianceAnalyzer
 from classify import FakeNewsClassifier
 from classify import Evaluation
+from csvResultCreator import FakeNewsCsvResultCreator
 
 CONFIG_FILE_PATH = "config.json"
 VECTOR_FILE_PATHS = dict()
 
 #for reader
-USED_CATEGORY_SET = ['unreliable', 'conspiracy', 'clickbait'] # for 3 mb dataset
-NUMBER_OF_INSTANCES_IN_CATEGORIES = 100 # for 3 mb dataset
+USED_CATEGORY_SET = ['unreliable', 'conspiracy', 'clickbait', 'political', 'junksci'] # for 3 mb dataset
+NUMBER_OF_INSTANCES_IN_CATEGORIES = 1000 # for 3 mb dataset
 #USED_CATEGORY_SET = ['conspiracy', 'political', 'fake' ] # for 300 mb dataset
 #NUMBER_OF_INSTANCES_IN_CATEGORIES = 5000 # for 300 mb dataset
 
@@ -68,6 +69,10 @@ def classify(vectorFilePath):
         out = json.dumps(result, indent=4)
         f.write(out)
 
+def writeCsvResult():
+    result = FakeNewsCsvResultCreator(CONFIG_FILE_PATH)
+    result.createResultCsv()
+
 def updateFilePaths():
     for i in list(VECTOR_FILE_PATHS):
         VECTOR_FILE_PATHS[i + "_red"] = VECTOR_FILE_PATHS[i][:-5] + "_reduced.json"
@@ -113,5 +118,8 @@ for vectorType in VECTOR_FILE_PATHS.values():
     print("Classification on %s" % vectorType)
     classify(vectorType)
     print("Classification is done.\n")
+
+#WRITE SUMMARY TO CSV
+writeCsvResult()
 
 print("end.")

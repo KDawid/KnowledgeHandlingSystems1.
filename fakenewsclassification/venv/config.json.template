@@ -9,7 +9,9 @@
 		"TF_IDF_VECTOR_FILE_PATH": "JSON file of categories and WordVectors (TF-IDF)",
 		"WORD2VEC_VECTOR_FILE_PATH": "JSON file of categories and WordVectors (Word2Vec)",
 		"WORD2VEC_TFIDF_VECTOR_FILE_PATH": "JSON file of categories and WordVectors (Word2Vec weighted with TF-IDF)",
-		"WORD2VEC_MODEL_FILE_PATH": "Google Word2Vec model (binary) - http://mccormickml.com/2016/04/12/googles-pretrained-word2vec-model-in-python/"
+		"WORD2VEC_MODEL_FILE_PATH": "Google Word2Vec model (binary) - http://mccormickml.com/2016/04/12/googles-pretrained-word2vec-model-in-python/",
+		"RESULT_FOLDER": "Folder where result JSONs are located",
+		"CSV_RESULT_FILE_PATH": "Results collected in CSV file"
 	},
 	"CSV_FILE_PATH": "",
 	"JSON_FILE_PATH": "",
@@ -20,5 +22,7 @@
 	"TF_IDF_VECTOR_FILE_PATH": "",
 	"WORD2VEC_VECTOR_FILE_PATH": "",
 	"WORD2VEC_TFIDF_VECTOR_FILE_PATH": "",
-	"WORD2VEC_MODEL_FILE_PATH": ""
+	"WORD2VEC_MODEL_FILE_PATH": "",
+	"RESULT_FOLDER": "",
+	"CSV_RESULT_FILE_PATH": ""
 }

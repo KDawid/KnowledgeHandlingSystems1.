@@ -36,7 +36,7 @@ class FakeNewsCsvResultCreator:
                 file.write("\n".encode())
                 methods = list(result[acc_type][next(iter(result[acc_type]))].keys())
                 for method in methods:
-                    file.write((method[:-5] + ",").encode())
+                    file.write((method[:-12] + ",").encode())
                     for key in head:
                         if head[keyLength] == key:
                             file.write(str(result[acc_type][key][method]).encode())

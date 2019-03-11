@@ -89,35 +89,50 @@ print(VECTOR_FILE_PATHS)
 print("")
 
 #READER
-print("Reading data")
-readData()
-print("Reading data was successful.\n")
+try:
+    print("Reading data")
+    readData()
+    print("Reading data was successful.\n")
+except Exception as e:
+    print("ERROR - Could not read data (%s)" % str(e))
 
 #PREPROCESSER
 for preprocessType in PREPROCESS_TYPE:
     for transformationType in TRANSFORMATION_TYPE:
-        print("Preprocess: %s, transform: %s" %(preprocessType.value, transformationType.value))
-        preprocessData(preprocessType, transformationType, VECTOR_FILE_PATHS[transformationType.value + "_" + preprocessType.value])
-        print("Preprocess is done.\n")
+        try:
+            print("Preprocess: %s, transform: %s" %(preprocessType.value, transformationType.value))
+            preprocessData(preprocessType, transformationType, VECTOR_FILE_PATHS[transformationType.value + "_" + preprocessType.value])
+            print("Preprocess is done.\n")
+        except Exception as e:
+            print("ERROR - Could not make preprocess: %s, transform: %s (%s)" %(preprocessType.value, transformationType.value,  str(e)))
 
 #DIMENSION REDUCTION
 for vectorType in VECTOR_FILE_PATHS.values():
-    print("Dimension reduction on %s" % vectorType)
-    reduceDimensions(vectorType)
-    print("Dimension reduction is done.\n")
+    try:
+        print("Dimension reduction on %s" % vectorType)
+        reduceDimensions(vectorType)
+        print("Dimension reduction is done.\n")
+    except Exception as e:
+        print("ERROR - Could not make dimension reduction on %s (%s)" % (vectorType, str(e)))
 updateFilePaths()
 
 #VARIANCE ANALYSIS
 for vectorType in VECTOR_FILE_PATHS.values():
-    print("Variance analysis on %s" % vectorType)
-    varianceAnalysis(vectorType)
-    print("Variance analysis is done.\n")
+    try:
+        print("Variance analysis on %s" % vectorType)
+        varianceAnalysis(vectorType)
+        print("Variance analysis is done.\n")
+    except Exception as e:
+        print("ERROR - Could not make variance analysis on %s (%s)" % (vectorType, str(e)))
 
 #CLASSIFICATION
 for vectorType in VECTOR_FILE_PATHS.values():
-    print("Classification on %s" % vectorType)
-    classify(vectorType)
-    print("Classification is done.\n")
+    try:
+        print("Classification on %s" % vectorType)
+        classify(vectorType)
+        print("Classification is done.\n")
+    except Exception as e:
+        print("ERROR - Could not make classification on %s (%s)" % (vectorType, str(e)))
 
 #WRITE SUMMARY TO CSV
 writeCsvResult()

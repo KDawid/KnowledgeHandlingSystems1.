@@ -75,14 +75,14 @@ class FakeNewsClassifier:
         #print(confusion_matrix(self.test_labels, test_pred))
         #print(classification_report(self.test_labels, test_pred))
         score = model.score(self.test_data, self.test_labels)
-        #print("Validation score: %s" % score)
+        print("Validation score: %s" % score)
         return score
 
     def crossValidate(self, model):
         scores = sklearn.model_selection.cross_val_score(model, self.dataset, self.dataset_labels,
                                                          cv=CROSS_VALIDATION)
         score = np.average(scores)
-        #print("K-fold score: %s" % score)
+        print("K-fold score: %s" % score)
         return score
 
     def makeClassification(self, eval):
